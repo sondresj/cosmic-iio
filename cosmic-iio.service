@@ -1,0 +1,13 @@
+[Unit]
+Description=Cosmic iio display transformer
+ConditionPathExists=/usr/bin/cosmic-iio
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/cosmic-iio
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cosmic-iio
+
+[Install]
+WantedBy=graphical-session.target
