@@ -7,7 +7,6 @@ Type=exec
 ExecStart=/usr/bin/cosmic-iio
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=cosmic-iio
 
 [Install]
 WantedBy=graphical-session.target
