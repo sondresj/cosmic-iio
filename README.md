@@ -11,7 +11,13 @@ Have iio-sensor-proxy installed and running
 ```sh
 just build-release
 sudo just install
-systemctl enable cosmic-iio.service
+just start
+```
+
+to uninstall:
+```sh
+just stop
+sudo just uninstall
 ```
 
 # TODO
