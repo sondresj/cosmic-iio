@@ -15,8 +15,10 @@ fn main() {
     println!("Targeting display {output:?} for mode transform");
 
     let accelerometer = Accelerometer::connect()
-        .and_then(Accelerometer::claim)
-        .expect("Unable to connection to dbus system");
+        .expect("Unable to connect to system dbus")
+        .claim()
+        .expect("Unable to claim accelerometer, is iio-sensors-proxy running?");
+
     println!("Claimed accelerometer");
 
     let initial_transform = accelerometer.get_transform();
