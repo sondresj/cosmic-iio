@@ -10,12 +10,10 @@ unwrap_used = "deny"
 
 [dependencies]
 dbus = "0.9.7"
-kdl = "4.7.1"
 signal-hook = "0.3.17"
 
 # TODO: Consider using libcosmic to make applet of this maybe?
 # libcosmic = { git = "https://github.com/pop-os/libcosmic" }
-# TODO: Could interface with the below library instead of calling the cli directly..
-# cosmic-randr = { git = "https://github.com/pop-os/cosmic-randr", version = "0.1.0" }
-# TODO: if using the above lib, we need this below one
-# tachyonix = "0.3.1"
+wayland-client = "0.31.7"
+cosmic-randr = { git = "https://github.com/pop-os/cosmic-randr" }
+tachyonix = "0.3.1"

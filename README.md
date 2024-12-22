@@ -1,6 +1,6 @@
 # Cosmic-iio
 
-WIP daemon to listen for accelerometer orientation changes and transform display accordingly.
+Reads iio-sensor-proxy accelerometer orientation changes and transforms display in COSMIC accordingly
 
 ## Requirements
 
@@ -15,6 +15,7 @@ just start
 ```
 
 to uninstall:
+
 ```sh
 just stop
 sudo just uninstall
