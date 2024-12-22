@@ -1,11 +1,10 @@
 name := 'cosmic-iio'
 
-base-dir := '/usr'
 bin-src := 'target/release' / name
-bin-dst := base-dir / 'bin' / name
+bin-dst := '/usr/bin' / name
 
-service-file := name + '.service'
-service-dst := '/etc/systemd/user' / service-file
+service := name + '.service'
+service-dst := '/etc/systemd/user' / service
 
 default: run
 
@@ -31,17 +30,17 @@ run *args:
 install:
     install -Dm0755 {{bin-src}} {{bin-dst}}
     mkdir -p '/etc/systemd/user'
-    cp {{service-file}} {{service-dst}}
+    cp {{service}} {{service-dst}}
 
 # Run as regular user
 start:
-    systemctl --user enable {{service-file}}
-    systemctl --user start {{service-file}}
+    systemctl --user enable {{service}}
+    systemctl --user start {{service}}
 
 # Run as regular user
 stop:
-    systemctl --user stop {{service-file}}
-    systemctl --user disable {{service-file}}
+    systemctl --user stop {{service}}
+    systemctl --user disable {{service}}
 
 # Requires sudo
 uninstall:
