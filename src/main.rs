@@ -17,11 +17,11 @@ fn main() {
 
     println!("Claimed accelerometer");
 
-    let _ = accelerometer.get_transform().try_into().inspect(|t| {
-        let _ = randr
-            .apply_transform(OUTPUT_DISPLAY, *t)
-            .inspect_err(|e| eprintln!("{e:?}"));
-    });
+    let _ = accelerometer
+        .get_transform()
+        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+        .and_then(|t| randr.apply_transform(OUTPUT_DISPLAY, *t))
+        .inspect_err(|e| eprintln!("{e:?}"));
 
     let terminator = TerminationSignal::new()
         .register()
@@ -33,15 +33,14 @@ fn main() {
             .inspect_err(|e| eprintln!("Error processing messages on dbus: {e:?}"))
         {
             if did_process {
-                let transform = accelerometer.get_transform();
-                if let Ok(wlt) = transform.try_into() {
+                if let Ok(wlt) = accelerometer.get_transform() {
                     let result = randr
-                        .apply_transform(OUTPUT_DISPLAY, wlt)
+                        .apply_transform(OUTPUT_DISPLAY, *wlt)
                         .inspect_err(|why| {
-                            eprintln!("Could not set transform {transform}. {why}");
+                            eprintln!("Could not set transform {wlt}. {why}");
                         });
                     if result.is_ok() {
-                        println!("Transformed display {OUTPUT_DISPLAY} with transform {transform}",);
+                        println!("Transformed display {OUTPUT_DISPLAY} with transform {wlt}",);
                     }
                 } else {
                     println!("Received unknown orientation");

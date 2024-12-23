@@ -10,8 +10,6 @@ pub struct CosmicRandrClient {
     queue: EventQueue<Context>,
 }
 
-pub type WlTransform = Transform;
-
 impl CosmicRandrClient {
     pub fn connect() -> Result<Self, cosmic_randr::Error> {
         let (sender, receiver) = tachyonix::channel(5);
