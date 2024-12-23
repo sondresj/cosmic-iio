@@ -1,77 +1,119 @@
-use std::process::Command;
+use cosmic_randr::{context::HeadConfiguration, Context, Message};
+use tachyonix::Receiver;
+use wayland_client::{
+    backend::WaylandError, protocol::wl_output::Transform, Connection, DispatchError, EventQueue,
+};
 
-use kdl::KdlDocument;
-
-use super::transform::{to_transform_string, Transform};
-
-#[derive(Debug)]
-pub struct OutputDisplay {
-    pub output: String,
-    pub width: String,
-    pub height: String,
-    pub transform: Transform,
+pub struct CosmicRandrClient {
+    receiver: Receiver<Message>,
+    context: Context,
+    queue: EventQueue<Context>,
 }
 
-pub fn get_output(identifier: &str) -> OutputDisplay {
-    let output = Command::new("cosmic-randr")
-        .args(["list", "--kdl"])
-        .output()
-        .expect("cosmic-randr --list --kdl call failed");
-    let kdl_doc = ::core::str::from_utf8(&output.stdout)
-        .expect("invalid output from cosmic-randr")
-        .parse::<KdlDocument>()
-        .expect("invalid kdl ouput from cosmic-randr");
+impl CosmicRandrClient {
+    pub fn connect() -> Result<Self, cosmic_randr::Error> {
+        let (sender, receiver) = tachyonix::channel(5);
+        let (context, queue) = cosmic_randr::connect(sender)?;
 
-    let first_display = kdl_doc
-        .nodes()
-        .iter()
-        .find(|n| {
-            n.get(0)
-                .is_some_and(|arg| arg.value().as_string().is_some_and(|s| s.eq(identifier)))
+        Ok(Self {
+            receiver,
+            context,
+            queue,
         })
-        .expect("Expected a display with identifier eDP-1");
-    let display_props = first_display
-        .children()
-        .expect("Expected properties for display");
-    let current_mode = display_props
-        .get("modes")
-        .and_then(|modes| modes.children())
-        .and_then(|modes| modes.nodes().iter().find(|n| n.get("current").is_some()))
-        .expect("Expected to find a current mode for display");
-    let width: String = current_mode.get(0).expect("..").value().to_string();
-    let height: String = current_mode.get(1).expect("..").value().to_string();
-    let transform_str: &str = display_props
-        .get("transform")
-        .and_then(|p| p.get(0))
-        .and_then(|v| v.value().as_string())
-        .expect("Expected display to have a transform property");
+    }
 
-    OutputDisplay {
-        width,
-        height,
-        output: identifier.into(),
-        transform: Transform::from_transform(transform_str),
+    fn dispatch_until_manager_done(&mut self) -> Result<(), cosmic_randr::Error> {
+        'outer: loop {
+            while let Ok(msg) = self.receiver.try_recv() {
+                if matches!(msg, Message::ManagerDone) {
+                    break 'outer;
+                }
+            }
+
+            dispatch(
+                &self.context.connection.clone(),
+                &mut self.queue,
+                &mut self.context,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn receive_config_messages(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        loop {
+            while let Ok(message) = self.receiver.try_recv() {
+                match message {
+                    Message::ConfigurationSucceeded => return Ok(()),
+                    Message::ConfigurationCancelled => return Err("Configuration cancelled".into()),
+                    Message::ConfigurationFailed => return Err("Configuration failed".into()),
+                    _ => {}
+                }
+            }
+            dispatch(
+                &self.context.connection.clone(),
+                &mut self.queue,
+                &mut self.context,
+            )?;
+        }
+    }
+
+    // pub fn get_output(&mut self, id: &str) -> Option<&cosmic_randr::output_head::OutputHead> {
+    //     if self.dispatch_until_manager_done().is_ok() {
+    //         self.context
+    //             .output_heads
+    //             .values()
+    //             .filter(|h| h.name.as_str() == id)
+    //             .nth(0)
+    //     } else {
+    //         None
+    //     }
+    // }
+
+    pub fn apply_transform(
+        &mut self,
+        output: &str,
+        transform: Transform,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.dispatch_until_manager_done()?;
+
+        let mut config = self.context.create_output_config();
+        let head_config = HeadConfiguration {
+            transform: Some(transform),
+            ..Default::default()
+        };
+        config.enable_head(output, Some(head_config))?;
+        config.apply();
+
+        self.receive_config_messages()?;
+
+        Ok(())
     }
 }
 
-pub fn set_transform(display: &mut OutputDisplay, transform: Transform) -> bool {
-    if transform == Transform::Unknown || display.transform == transform {
-        return true;
-    }
-    let status = Command::new("cosmic-randr")
-        .args([
-            "mode",
-            "--transform",
-            to_transform_string(transform),
-            display.output.as_str(),
-            display.width.as_str(),
-            display.height.as_str(),
-        ])
-        .status()
-        .expect("cosmic-randr call failed");
+fn dispatch<Data>(
+    connection: &Connection,
+    event_queue: &mut EventQueue<Data>,
+    data: &mut Data,
+) -> Result<usize, DispatchError> {
+    let dispatched = event_queue.dispatch_pending(data)?;
 
-    if status.success() {
-        display.transform = transform;
+    if dispatched > 0 {
+        return Ok(dispatched);
     }
-    status.success()
+
+    connection.flush()?;
+
+    if let Some(guard) = connection.prepare_read() {
+        if let Err(why) = guard.read() {
+            if let WaylandError::Io(ref error) = why {
+                if error.kind() != std::io::ErrorKind::WouldBlock {
+                    return Err(DispatchError::Backend(why));
+                }
+            } else {
+                return Err(DispatchError::Backend(why));
+            }
+        }
+    }
+
+    event_queue.dispatch_pending(data)
 }

@@ -48,7 +48,7 @@ impl Accelerometer {
         Ok(self)
     }
 
-    pub fn try_get_transform(&self) -> Result<Transform, Error> {
+    pub fn get_transform(&self) -> Result<Transform, Error> {
         let mut reply =
             Message::new_method_call(DBUS_NAME, DBUS_PATH, DBUS_PROPERTIES_INTERFACE, "Get")
                 .map(|msg| msg.append2(DBUS_SENSORS_INTERFACE, "AccelerometerOrientation"))
@@ -64,10 +64,6 @@ impl Accelerometer {
             .map(|v| v.0)
             .map(Transform::from_orientation)
             .ok_or_else(|| Error::new_custom("InvalidResponse", "Unable to parse response"))
-    }
-
-    pub fn get_transform(&self) -> Transform {
-        self.try_get_transform().unwrap_or(Transform::Unknown)
     }
 
     pub fn poll_orientation_changed(&self, duration: Duration) -> Result<bool, Error> {

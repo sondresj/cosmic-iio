@@ -1,47 +1,52 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
-pub enum Transform {
-    Normal,
-    Rotate90,
-    Rotate180,
-    Rotate270,
-    // TODO: Handle these?
-    // Flipped,
-    // Flipped90,
-    // Flipped180,
-    // Flipped270
-    #[default]
-    Unknown,
+#[allow(clippy::module_name_repetitions)]
+pub use wayland_client::protocol::wl_output::Transform as WlTransform;
+
+#[derive(Copy, Clone, Debug)]
+pub struct Transform(WlTransform);
+
+impl Default for Transform {
+    fn default() -> Self {
+        Self(WlTransform::Normal)
+    }
+}
+
+impl Deref for Transform {
+    type Target = WlTransform;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Transform {
-    pub fn from_transform(value: &str) -> Self {
-        match value {
-            "normal" => Self::Normal,
-            "rotate90" => Self::Rotate90,
-            "rotate180" => Self::Rotate180,
-            "rotate270" => Self::Rotate270,
-            _ => Self::Unknown,
-        }
-    }
+    // pub fn from_transform(value: &str) -> Self {
+    //     match value {
+    //         // "normal" => Self(WlTransform::Normal),
+    //         "rotate90" => Self(WlTransform::_90),
+    //         "rotate180" => Self(WlTransform::_180),
+    //         "rotate270" => Self(WlTransform::_270),
+    //         _ => Self(WlTransform::Normal),
+    //     }
+    // }
 
     pub fn from_orientation(value: &str) -> Self {
         match value {
-            "normal" => Self::Normal,
-            "left-up" => Self::Rotate90,
-            "bottom-up" => Self::Rotate180,
-            "right-up" => Self::Rotate270,
-            _ => Self::Unknown,
+            // "normal" => Self(WlTransform::Normal),
+            "left-up" => Self(WlTransform::_90),
+            "bottom-up" => Self(WlTransform::_180),
+            "right-up" => Self(WlTransform::_270),
+            _ => Self(WlTransform::Normal),
         }
     }
 }
 
 pub const fn to_transform_string(t: Transform) -> &'static str {
-    match t {
-        Transform::Rotate90 => "rotate90",
-        Transform::Rotate180 => "rotate180",
-        Transform::Rotate270 => "rotate270",
+    match t.0 {
+        WlTransform::_90 => "rotate90",
+        WlTransform::_180 => "rotate180",
+        WlTransform::_270 => "rotate270",
         _ => "normal",
     }
 }
