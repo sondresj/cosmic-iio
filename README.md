@@ -1,5 +1,9 @@
 # Cosmic-iio
 
+[!NOTE]
+I'm too busy to maintain this service at the moment.
+Feel free to fork/steal/use/submit-prs, for the moment this solves my personal use-case, I may or may not get around to do bugfixes or other features
+
 Reads iio-sensor-proxy accelerometer orientation changes and transforms display in COSMIC accordingly
 
 ## Requirements
