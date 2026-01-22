@@ -1,4 +1,4 @@
-# Cosmic-iio
+y# Cosmic-iio
 
 > [!NOTE]
 > I'm too busy to maintain this service at the moment.
@@ -28,7 +28,7 @@ sudo just uninstall
 # TODO
 
 - Arch and Deb packages
-- Handle touch-screen rotation (needs cosmic support)
+- ~~Handle touch-screen rotation (needs cosmic support)~~ seems to work as expected now
 - More robust display output selection (don't want to transform all connected display, only the display on the device, but can't identify this display yet)
 
 ## Contributers wanted
